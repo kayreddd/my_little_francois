@@ -4,7 +4,7 @@ import '../models/party_model.dart';
 import '../models/user_model.dart';
 import '../database/database_service.dart';
 import '../utils/date_formatter.dart';
-import '../models/horse_model.dart'; // Import the Horse model
+import '../models/horse_model.dart'; // Importation du modèle Horse
 
 class StableManagerApprovalScreen extends StatefulWidget {
   final User currentUser;

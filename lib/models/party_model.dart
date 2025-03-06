@@ -9,31 +9,31 @@ class Party extends HiveObject {
   int? id;
 
   @HiveField(1)
-  String title;
+  String title; // Titre de la soirée
 
   @HiveField(2)
-  String description;
+  String description; // Description de la soirée
 
   @HiveField(3)
-  DateTime date;
+  DateTime date; // Date et heure de la soirée
 
   @HiveField(4)
-  String? imageUrl;
+  String? imageUrl; // URL de l'image (optionnel)
 
   @HiveField(5)
-  int creatorId;
+  int creatorId; // ID de l'utilisateur qui a créé la soirée
 
   @HiveField(6)
-  List<PartyParticipant> participants;
+  List<PartyParticipant> participants; // Liste des participants
 
   @HiveField(7)
-  PartyType type;
+  PartyType type; // Type de soirée
 
   @HiveField(8)
-  ApprovalStatus approvalStatus;
+  ApprovalStatus approvalStatus; // Statut d'approbation
 
   @HiveField(9)
-  String? rejectionReason;
+  String? rejectionReason; // Raison du refus (si applicable)
 
   Party({
     this.id,
@@ -69,16 +69,16 @@ class Party extends HiveObject {
 @HiveType(typeId: 12)
 class PartyParticipant extends HiveObject {
   @HiveField(0)
-  int userId;
+  int userId; // ID de l'utilisateur participant
 
   @HiveField(1)
-  String username;
+  String username; // Nom d'utilisateur du participant
 
   @HiveField(2)
-  String? contribution;
+  String? contribution; // Ce que le participant apporte à la soirée (optionnel)
 
   @HiveField(3)
-  DateTime joinedAt;
+  DateTime joinedAt; // Date à laquelle l'utilisateur a rejoint la soirée
 
   PartyParticipant({
     required this.userId,
@@ -91,13 +91,11 @@ class PartyParticipant extends HiveObject {
 @HiveType(typeId: 13)
 enum PartyType {
   @HiveField(0)
-  aperitif,
+  aperitif, // Apéritif
 
   @HiveField(1)
-  dinner,
+  dinner, // Dîner
 
   @HiveField(2)
-  other
+  other // Autre type de soirée
 }
-
-// Réutilisation de l'énumération ApprovalStatus définie dans riding_lesson_model.dart

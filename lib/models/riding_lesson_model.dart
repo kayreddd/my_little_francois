@@ -13,19 +13,19 @@ enum TrainingGround {
 @HiveType(typeId: 5)
 enum LessonDuration {
   @HiveField(0)
-  thirtyMinutes,
+  thirtyMinutes, // 30 minutes
   @HiveField(1)
-  oneHour
+  oneHour // 1 heure
 }
 
 @HiveType(typeId: 6)
 enum Discipline {
   @HiveField(0)
-  dressage,
+  dressage, // Dressage
   @HiveField(1)
-  jumpingObstacles,
+  jumpingObstacles, // Saut d'obstacles
   @HiveField(2)
-  endurance
+  endurance // Endurance
 }
 
 @HiveType(typeId: 14)
@@ -53,20 +53,20 @@ class RidingLesson extends HiveObject {
   final DateTime dateTime; // Date et heure du cours
 
   @HiveField(4)
-  final TrainingGround trainingGround; // Terrain d'entraînement (Manège ou Carrière)
+  final LessonDuration duration; // Durée du cours
 
   @HiveField(5)
-  final LessonDuration duration; // Durée du cours (30 minutes ou 1 heure)
+  final TrainingGround trainingGround; // Terrain d'entraînement (manège ou carrière)
 
   @HiveField(6)
-  final Discipline discipline; // Discipline (Dressage, Saut d'obstacle, Endurance)
+  final Discipline discipline; // Discipline pratiquée
 
   @HiveField(7)
-  final String? notes; // Notes supplémentaires (optionnel)
-
+  final String? notes; // Notes ou commentaires supplémentaires
+  
   @HiveField(8)
   final ApprovalStatus approvalStatus; // Statut d'approbation
-
+  
   @HiveField(9)
   final String? rejectionReason; // Raison du refus (si applicable)
 
@@ -75,21 +75,22 @@ class RidingLesson extends HiveObject {
     required this.userId,
     this.horseId,
     required this.dateTime,
-    required this.trainingGround,
     required this.duration,
+    required this.trainingGround,
     required this.discipline,
     this.notes,
     this.approvalStatus = ApprovalStatus.pending,
     this.rejectionReason,
   });
 
+  // Crée une copie de l'objet avec les champs spécifiés mis à jour
   RidingLesson copyWith({
     int? id,
     int? userId,
     int? horseId,
     DateTime? dateTime,
-    TrainingGround? trainingGround,
     LessonDuration? duration,
+    TrainingGround? trainingGround,
     Discipline? discipline,
     String? notes,
     ApprovalStatus? approvalStatus,
@@ -100,8 +101,8 @@ class RidingLesson extends HiveObject {
       userId: userId ?? this.userId,
       horseId: horseId ?? this.horseId,
       dateTime: dateTime ?? this.dateTime,
-      trainingGround: trainingGround ?? this.trainingGround,
       duration: duration ?? this.duration,
+      trainingGround: trainingGround ?? this.trainingGround,
       discipline: discipline ?? this.discipline,
       notes: notes ?? this.notes,
       approvalStatus: approvalStatus ?? this.approvalStatus,
