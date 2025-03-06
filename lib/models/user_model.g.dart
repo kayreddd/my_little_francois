@@ -29,13 +29,14 @@ class UserAdapter extends TypeAdapter<User> {
       ownedHorseIds: (fields[9] as List?)?.cast<int>(),
       associatedHorseIds: (fields[10] as List?)?.cast<int>(),
       isAdmin: fields[11] as bool,
+      isStableManager: fields[12] as bool,
     );
   }
 
   @override
   void write(BinaryWriter writer, User obj) {
     writer
-      ..writeByte(12)
+      ..writeByte(13)
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(1)
@@ -59,7 +60,9 @@ class UserAdapter extends TypeAdapter<User> {
       ..writeByte(10)
       ..write(obj.associatedHorseIds)
       ..writeByte(11)
-      ..write(obj.isAdmin);
+      ..write(obj.isAdmin)
+      ..writeByte(12)
+      ..write(obj.isStableManager);
   }
 
   @override

@@ -7,6 +7,9 @@ import 'profile_screen.dart';
 import 'horse_management_screen.dart';
 import 'news_feed_screen.dart';
 import 'riding_lesson_screen.dart';
+import 'competition_list_screen.dart';
+import 'party_list_screen.dart';
+import 'stable_manager_approval_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   final User user;
@@ -159,6 +162,47 @@ class _HomeScreenState extends State<HomeScreen> {
                       ).then((_) => _loadRecentEvents());
                     },
                   ),
+                  _buildActionButton(
+                    context,
+                    icon: Icons.emoji_events,
+                    label: 'Concours',
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => CompetitionListScreen(user: _currentUser),
+                        ),
+                      ).then((_) => _loadRecentEvents());
+                    },
+                  ),
+                  _buildActionButton(
+                    context,
+                    icon: Icons.celebration,
+                    label: 'Soirées',
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => PartyListScreen(currentUser: _currentUser),
+                        ),
+                      ).then((_) => _loadRecentEvents());
+                    },
+                  ),
+                  // Bouton d'administration visible uniquement pour les gérants des écuries
+                  if (_currentUser.isStableManager)
+                    _buildActionButton(
+                      context,
+                      icon: Icons.admin_panel_settings,
+                      label: 'Gestion des écuries',
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => StableManagerApprovalScreen(currentUser: _currentUser),
+                          ),
+                        ).then((_) => _loadRecentEvents());
+                      },
+                    ),
                 ],
               ),
               

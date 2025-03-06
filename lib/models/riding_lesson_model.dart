@@ -28,6 +28,16 @@ enum Discipline {
   endurance
 }
 
+@HiveType(typeId: 14)
+enum ApprovalStatus {
+  @HiveField(0)
+  pending, // En attente d'approbation
+  @HiveField(1)
+  approved, // Approuvé
+  @HiveField(2)
+  rejected // Refusé
+}
+
 @HiveType(typeId: 7)
 class RidingLesson extends HiveObject {
   @HiveField(0)
@@ -54,6 +64,12 @@ class RidingLesson extends HiveObject {
   @HiveField(7)
   final String? notes; // Notes supplémentaires (optionnel)
 
+  @HiveField(8)
+  final ApprovalStatus approvalStatus; // Statut d'approbation
+
+  @HiveField(9)
+  final String? rejectionReason; // Raison du refus (si applicable)
+
   RidingLesson({
     this.id,
     required this.userId,
@@ -63,6 +79,8 @@ class RidingLesson extends HiveObject {
     required this.duration,
     required this.discipline,
     this.notes,
+    this.approvalStatus = ApprovalStatus.pending,
+    this.rejectionReason,
   });
 
   RidingLesson copyWith({
@@ -74,6 +92,8 @@ class RidingLesson extends HiveObject {
     LessonDuration? duration,
     Discipline? discipline,
     String? notes,
+    ApprovalStatus? approvalStatus,
+    String? rejectionReason,
   }) {
     return RidingLesson(
       id: id ?? this.id,
@@ -84,6 +104,8 @@ class RidingLesson extends HiveObject {
       duration: duration ?? this.duration,
       discipline: discipline ?? this.discipline,
       notes: notes ?? this.notes,
+      approvalStatus: approvalStatus ?? this.approvalStatus,
+      rejectionReason: rejectionReason ?? this.rejectionReason,
     );
   }
 
@@ -97,28 +119,13 @@ class RidingLesson extends HiveObject {
       'duration': duration.toString(),
       'discipline': discipline.toString(),
       'notes': notes,
+      'approvalStatus': approvalStatus.toString(),
+      'rejectionReason': rejectionReason,
     };
   }
 
-  factory RidingLesson.fromMap(Map<String, dynamic> map) {
-    return RidingLesson(
-      id: map['id'],
-      userId: map['userId'],
-      horseId: map['horseId'],
-      dateTime: DateTime.parse(map['dateTime']),
-      trainingGround: TrainingGround.values.firstWhere(
-        (e) => e.toString() == map['trainingGround'],
-        orElse: () => TrainingGround.arena,
-      ),
-      duration: LessonDuration.values.firstWhere(
-        (e) => e.toString() == map['duration'],
-        orElse: () => LessonDuration.oneHour,
-      ),
-      discipline: Discipline.values.firstWhere(
-        (e) => e.toString() == map['discipline'],
-        orElse: () => Discipline.dressage,
-      ),
-      notes: map['notes'],
-    );
+  @override
+  String toString() {
+    return 'RidingLesson(id: $id, userId: $userId, horseId: $horseId, dateTime: $dateTime, trainingGround: $trainingGround, duration: $duration, discipline: $discipline, notes: $notes, approvalStatus: $approvalStatus, rejectionReason: $rejectionReason)';
   }
 }

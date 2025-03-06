@@ -25,13 +25,15 @@ class RidingLessonAdapter extends TypeAdapter<RidingLesson> {
       duration: fields[5] as LessonDuration,
       discipline: fields[6] as Discipline,
       notes: fields[7] as String?,
+      approvalStatus: fields[8] as ApprovalStatus,
+      rejectionReason: fields[9] as String?,
     );
   }
 
   @override
   void write(BinaryWriter writer, RidingLesson obj) {
     writer
-      ..writeByte(8)
+      ..writeByte(10)
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(1)
@@ -47,7 +49,11 @@ class RidingLessonAdapter extends TypeAdapter<RidingLesson> {
       ..writeByte(6)
       ..write(obj.discipline)
       ..writeByte(7)
-      ..write(obj.notes);
+      ..write(obj.notes)
+      ..writeByte(8)
+      ..write(obj.approvalStatus)
+      ..writeByte(9)
+      ..write(obj.rejectionReason);
   }
 
   @override
@@ -179,6 +185,50 @@ class DisciplineAdapter extends TypeAdapter<Discipline> {
   bool operator ==(Object other) =>
       identical(this, other) ||
       other is DisciplineAdapter &&
+          runtimeType == other.runtimeType &&
+          typeId == other.typeId;
+}
+
+class ApprovalStatusAdapter extends TypeAdapter<ApprovalStatus> {
+  @override
+  final int typeId = 14;
+
+  @override
+  ApprovalStatus read(BinaryReader reader) {
+    switch (reader.readByte()) {
+      case 0:
+        return ApprovalStatus.pending;
+      case 1:
+        return ApprovalStatus.approved;
+      case 2:
+        return ApprovalStatus.rejected;
+      default:
+        return ApprovalStatus.pending;
+    }
+  }
+
+  @override
+  void write(BinaryWriter writer, ApprovalStatus obj) {
+    switch (obj) {
+      case ApprovalStatus.pending:
+        writer.writeByte(0);
+        break;
+      case ApprovalStatus.approved:
+        writer.writeByte(1);
+        break;
+      case ApprovalStatus.rejected:
+        writer.writeByte(2);
+        break;
+    }
+  }
+
+  @override
+  int get hashCode => typeId.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is ApprovalStatusAdapter &&
           runtimeType == other.runtimeType &&
           typeId == other.typeId;
 }

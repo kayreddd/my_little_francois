@@ -39,6 +39,9 @@ class User {
   
   @HiveField(11)
   final bool isAdmin; // Indique si l'utilisateur est un administrateur
+  
+  @HiveField(12)
+  final bool isStableManager; // Indique si l'utilisateur est un gérant des écuries
 
   User({
     this.id,
@@ -53,6 +56,7 @@ class User {
     this.ownedHorseIds,
     this.associatedHorseIds,
     this.isAdmin = false,
+    this.isStableManager = false,
   });
 
   Map<String, dynamic> toMap() {
@@ -69,6 +73,7 @@ class User {
       'ownedHorseIds': ownedHorseIds,
       'associatedHorseIds': associatedHorseIds,
       'isAdmin': isAdmin,
+      'isStableManager': isStableManager,
     };
   }
 
@@ -86,6 +91,7 @@ class User {
       ownedHorseIds: map['ownedHorseIds'] != null ? List<int>.from(map['ownedHorseIds']) : null,
       associatedHorseIds: map['associatedHorseIds'] != null ? List<int>.from(map['associatedHorseIds']) : null,
       isAdmin: map['isAdmin'] ?? false,
+      isStableManager: map['isStableManager'] ?? false,
     );
   }
   
@@ -103,6 +109,7 @@ class User {
     List<int>? ownedHorseIds,
     List<int>? associatedHorseIds,
     bool? isAdmin,
+    bool? isStableManager,
   }) {
     return User(
       id: id ?? this.id,
@@ -117,6 +124,7 @@ class User {
       ownedHorseIds: ownedHorseIds ?? this.ownedHorseIds,
       associatedHorseIds: associatedHorseIds ?? this.associatedHorseIds,
       isAdmin: isAdmin ?? this.isAdmin,
+      isStableManager: isStableManager ?? this.isStableManager,
     );
   }
 }
