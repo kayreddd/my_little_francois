@@ -87,11 +87,14 @@ class _HorseEditScreenState extends State<HorseEditScreen> {
           ownerId: widget.isOwner ? widget.userId : widget.horse?.ownerId,
         );
 
-        bool success;
+        bool success = false;
+        Horse? resultHorse;
+        
         if (widget.horse == null) {
           // Création d'un nouveau cheval
           final newHorse = await DatabaseService.instance.createHorse(horse);
           success = newHorse != null;
+          resultHorse = newHorse;
           
           if (success && widget.isOwner && newHorse != null) {
             // Associer le cheval à l'utilisateur en tant que propriétaire
@@ -104,6 +107,10 @@ class _HorseEditScreenState extends State<HorseEditScreen> {
         } else {
           // Mise à jour d'un cheval existant
           success = await DatabaseService.instance.updateHorse(horse);
+          if (success) {
+            // Récupérer le cheval mis à jour depuis la base de données
+            resultHorse = await DatabaseService.instance.getHorse(horse.id!);
+          }
         }
 
         if (success && mounted) {
@@ -114,7 +121,8 @@ class _HorseEditScreenState extends State<HorseEditScreen> {
                   : 'Cheval mis à jour avec succès'),
             ),
           );
-          Navigator.pop(context, horse);
+          // Retourner le cheval complet avec l'ID généré par la base de données
+          Navigator.pop(context, resultHorse);
         } else if (mounted) {
           setState(() {
             _errorMessage = 'Erreur lors de l\'enregistrement du cheval';

@@ -81,7 +81,9 @@ class DatabaseService {
     }
 
     try {
-      final id = box.values.isEmpty ? 1 : box.values.last.id! + 1;
+      // Générer un nouvel ID
+      final id = box.values.isEmpty ? 1 : box.values.map((u) => u.id ?? 0).reduce(
+        (value, element) => value > element ? value : element) + 1;
       
       final newUser = User(
         id: id,
@@ -89,17 +91,23 @@ class DatabaseService {
         password: hashedPassword,
         email: user.email,
         profilePicturePath: user.profilePicturePath,
+        isStableManager: user.isStableManager,
       );
 
       // Ajouter l'utilisateur à la boîte et s'assurer que les données sont persistées
       final index = await box.add(newUser);
       await box.flush(); // Force l'écriture des données sur le disque
       
+      // Vérifier que l'utilisateur a bien été ajouté
+      final addedUser = box.getAt(index);
+      print('Nouvel utilisateur créé: ${addedUser?.username} (ID: ${addedUser?.id})');
+      print('Nombre total d\'utilisateurs: ${box.length}');
+      
       // Créer un événement pour le nouvel utilisateur
       await createEvent(
         Event(
           title: 'Nouveau cavalier',
-          description: '${user.username} a rejoint My Little François !',
+          description: '${user.username} a rejoint Horses Tim !',
           date: DateTime.now(),
           type: EventType.newUser,
           relatedUserId: id,
@@ -119,11 +127,31 @@ class DatabaseService {
     final hashedPassword = _hashPassword(password);
 
     try {
+      print('Tentative de connexion pour l\'utilisateur: $username');
+      print('Nombre d\'utilisateurs dans la base de données: ${box.length}');
+      
+      // Afficher tous les utilisateurs pour le débogage
+      if (box.isEmpty) {
+        print('Aucun utilisateur trouvé dans la base de données!');
+        return null;
+      }
+      
+      print('Liste des utilisateurs disponibles:');
+      for (var i = 0; i < box.length; i++) {
+        final u = box.getAt(i);
+        print('- ${u?.username} (email: ${u?.email})');
+      }
+      
+      // Rechercher l'utilisateur par nom d'utilisateur et mot de passe
       final user = box.values.firstWhere(
         (user) => user.username == username && user.password == hashedPassword,
+        orElse: () => throw Exception('Utilisateur non trouvé'),
       );
+      
+      print('Utilisateur trouvé: ${user.username} (ID: ${user.id})');
       return user;
     } catch (e) {
+      print('Erreur lors de la recherche de l\'utilisateur: $e');
       return null;
     }
   }
@@ -137,6 +165,21 @@ class DatabaseService {
       );
       return user;
     } catch (e) {
+      return null;
+    }
+  }
+  
+  // Récupérer un utilisateur par son nom d'utilisateur
+  Future<User?> getUserByUsername(String username) async {
+    final box = await usersBox;
+
+    try {
+      final user = box.values.firstWhere(
+        (user) => user.username == username,
+      );
+      return user;
+    } catch (e) {
+      print('Erreur lors de la récupération de l\'utilisateur: $e');
       return null;
     }
   }
@@ -154,6 +197,31 @@ class DatabaseService {
           final updatedUser = user.copyWith(password: hashedPassword);
           await box.putAt(userIndex, updatedUser);
           await box.flush(); // Force l'écriture des données sur le disque
+          print('Mot de passe mis à jour pour l\'utilisateur: ${user.username}');
+          return true;
+        }
+      }
+      return false;
+    } catch (e) {
+      print('Erreur lors de la mise à jour du mot de passe: $e');
+      return false;
+    }
+  }
+
+  Future<bool> updatePasswordByUsername(String username, String newPassword) async {
+    final box = await usersBox;
+    final hashedPassword = _hashPassword(newPassword);
+
+    try {
+      final userIndex = box.values.toList().indexWhere((user) => user.username == username);
+      
+      if (userIndex != -1) {
+        final user = box.getAt(userIndex);
+        if (user != null) {
+          final updatedUser = user.copyWith(password: hashedPassword);
+          await box.putAt(userIndex, updatedUser);
+          await box.flush(); // Force l'écriture des données sur le disque
+          print('Mot de passe mis à jour pour l\'utilisateur: ${user.username}');
           return true;
         }
       }
@@ -769,14 +837,16 @@ class DatabaseService {
   
   Future<User?> getUserById(int userId) async {
     final box = await usersBox;
+    
     try {
-      return box.values.firstWhere((user) => user.id == userId);
+      final user = box.values.firstWhere((user) => user.id == userId);
+      return user;
     } catch (e) {
-      print('Erreur lors de la récupération de l\'utilisateur avec l\'ID $userId: $e');
+      print('Erreur lors de la récupération de l\'utilisateur: $e');
       return null;
     }
   }
-  
+
   // Méthodes pour les soirées à thème
   Future<Party?> createParty(Party party) async {
     final box = await partiesBox;
@@ -970,9 +1040,35 @@ class DatabaseService {
   // Méthodes pour récupérer les cours et soirées en attente d'approbation
   Future<List<RidingLesson>> getPendingRidingLessons() async {
     final box = await ridingLessonsBox;
-    return box.values.where((lesson) => lesson.approvalStatus == ApprovalStatus.pending).toList();
+    final lessons = box.values.where((lesson) => lesson.approvalStatus == ApprovalStatus.pending).toList();
+    return lessons;
   }
-  
+
+  // Récupérer tous les cours à venir (approuvés et en attente)
+  Future<List<RidingLesson>> getUpcomingRidingLessons() async {
+    final box = await ridingLessonsBox;
+    final now = DateTime.now();
+    final lessons = box.values.where((lesson) => 
+      lesson.dateTime.isAfter(now) && 
+      (lesson.approvalStatus == ApprovalStatus.approved || 
+       lesson.approvalStatus == ApprovalStatus.pending)
+    ).toList();
+    
+    // Trier par date (du plus proche au plus éloigné)
+    lessons.sort((a, b) => a.dateTime.compareTo(b.dateTime));
+    return lessons;
+  }
+
+  // Récupérer les cours d'un utilisateur spécifique
+  Future<List<RidingLesson>> getUserRidingLessons(int userId) async {
+    final box = await ridingLessonsBox;
+    final lessons = box.values.where((lesson) => lesson.userId == userId).toList();
+    
+    // Trier par date (du plus proche au plus éloigné)
+    lessons.sort((a, b) => a.dateTime.compareTo(b.dateTime));
+    return lessons;
+  }
+
   Future<List<Party>> getPendingParties() async {
     final box = await partiesBox;
     return box.values.where((party) => party.approvalStatus == ApprovalStatus.pending).toList();
@@ -1049,15 +1145,37 @@ Future<void> initializeDatabaseFactory() async {
       Hive.registerAdapter(ApprovalStatusAdapter());
     }
     
-    // Options de configuration pour améliorer la persistance définies directement lors de l'ouverture des boîtes
+    // Définition d'une stratégie de compactage pour optimiser les performances
+    final compactionStrategy = (entries, deletedEntries) {
+      return deletedEntries > 50 || deletedEntries > 0.3 * entries;
+    };
     
     // Ensure the boxes are ready and persistent
-    final usersBox = await Hive.openBox<User>('users', crashRecovery: true);
-    final horsesBox = await Hive.openBox<Horse>('horses', crashRecovery: true);
-    final eventsBox = await Hive.openBox<Event>('events', crashRecovery: true);
-    final ridingLessonsBox = await Hive.openBox<RidingLesson>('riding_lessons', crashRecovery: true);
-    final competitionsBox = await Hive.openBox<Competition>('competitions', crashRecovery: true);
-    final partiesBox = await Hive.openBox<Party>('parties', crashRecovery: true);
+    final usersBox = await Hive.openBox<User>('users', 
+      crashRecovery: true,
+      compactionStrategy: compactionStrategy
+    );
+    
+    final horsesBox = await Hive.openBox<Horse>('horses', 
+      crashRecovery: true,
+      compactionStrategy: compactionStrategy
+    );
+    final eventsBox = await Hive.openBox<Event>('events', 
+      crashRecovery: true,
+      compactionStrategy: compactionStrategy
+    );
+    final ridingLessonsBox = await Hive.openBox<RidingLesson>('riding_lessons', 
+      crashRecovery: true,
+      compactionStrategy: compactionStrategy
+    );
+    final competitionsBox = await Hive.openBox<Competition>('competitions', 
+      crashRecovery: true,
+      compactionStrategy: compactionStrategy
+    );
+    final partiesBox = await Hive.openBox<Party>('parties', 
+      crashRecovery: true,
+      compactionStrategy: compactionStrategy
+    );
     
     // Forcer la synchronisation des données
     await usersBox.flush();
@@ -1089,6 +1207,10 @@ Future<void> initializeDatabaseFactory() async {
       await usersBox.flush();
       
       print('Utilisateur de test créé avec succès!');
+      
+      // Vérifier que l'utilisateur a bien été ajouté
+      print('Nombre d\'utilisateurs après création: ${usersBox.length}');
+      print('Premier utilisateur: ${usersBox.getAt(0)?.username}');
     }
     
     // Afficher des informations de débogage
@@ -1100,9 +1222,6 @@ Future<void> initializeDatabaseFactory() async {
     print('Nombre de soirées dans la base de données: ${partiesBox.length}');
   } catch (e) {
     print('Erreur lors de l\'initialisation de la base de données: $e');
-    // Tenter de récupérer en cas d'erreur
-    await Hive.deleteFromDisk();
-    print('Base de données réinitialisée suite à une erreur. Veuillez redémarrer l\'application.');
   }
 }
 

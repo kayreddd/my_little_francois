@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../models/party_model.dart';
 import '../models/user_model.dart';
 import '../database/database_service.dart';
+import '../models/riding_lesson_model.dart';
 import 'party_detail_screen.dart';
 
 class PartyListScreen extends StatefulWidget {
@@ -125,166 +126,221 @@ class _PartyListScreenState extends State<PartyListScreen> with SingleTickerProv
     final formattedDate = '${party.date.day}/${party.date.month}/${party.date.year} à ${party.date.hour}h${party.date.minute.toString().padLeft(2, '0')}';
     final partyTypeText = party.type == PartyType.aperitif ? 'Apéritif' : party.type == PartyType.dinner ? 'Repas' : 'Autre';
 
+    // Déterminer le texte et la couleur du statut d'approbation
+    String statusText;
+    Color statusBackgroundColor;
+    Color statusTextColor;
+    
+    switch (party.approvalStatus) {
+      case ApprovalStatus.approved:
+        statusText = 'Approuvée';
+        statusBackgroundColor = Colors.green.shade100;
+        statusTextColor = Colors.green.shade800;
+        break;
+      case ApprovalStatus.rejected:
+        statusText = 'Refusée';
+        statusBackgroundColor = Colors.red.shade100;
+        statusTextColor = Colors.red.shade800;
+        break;
+      case ApprovalStatus.pending:
+      default:
+        statusText = 'En attente';
+        statusBackgroundColor = Colors.orange.shade100;
+        statusTextColor = Colors.orange.shade800;
+        break;
+    }
+
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       elevation: 4,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
       ),
-      child: InkWell(
-        onTap: () async {
-          final result = await Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => PartyDetailScreen(
-                currentUser: widget.currentUser,
-                partyId: party.id,
-              ),
-            ),
-          );
+      child: Stack(
+        children: [
+          InkWell(
+            onTap: () async {
+              final result = await Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => PartyDetailScreen(
+                    currentUser: widget.currentUser,
+                    partyId: party.id,
+                  ),
+                ),
+              );
 
-          if (result == true) {
-            _loadParties();
-          }
-        },
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            ClipRRect(
-              borderRadius: const BorderRadius.only(
-                topLeft: Radius.circular(12),
-                topRight: Radius.circular(12),
-              ),
-              child: party.imageUrl != null && party.imageUrl!.isNotEmpty
-                  ? Image.network(
-                      party.imageUrl!,
-                      height: 150,
-                      fit: BoxFit.cover,
-                      errorBuilder: (context, error, stackTrace) {
-                        return Container(
+              if (result == true) {
+                _loadParties();
+              }
+            },
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                ClipRRect(
+                  borderRadius: const BorderRadius.only(
+                    topLeft: Radius.circular(12),
+                    topRight: Radius.circular(12),
+                  ),
+                  child: party.imageUrl != null && party.imageUrl!.isNotEmpty
+                      ? Image.network(
+                          party.imageUrl!,
+                          height: 150,
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) {
+                            return Container(
+                              height: 150,
+                              color: Colors.grey[300],
+                              child: const Icon(Icons.image_not_supported, size: 50),
+                            );
+                          },
+                        )
+                      : Container(
                           height: 150,
                           color: Colors.grey[300],
-                          child: const Icon(Icons.image_not_supported, size: 50),
-                        );
-                      },
-                    )
-                  : Container(
-                      height: 150,
-                      color: Colors.grey[300],
-                      child: Icon(
-                        party.type == PartyType.aperitif
-                            ? Icons.local_bar
-                            : party.type == PartyType.dinner
-                                ? Icons.restaurant
-                                : Icons.celebration,
-                        size: 50,
-                        color: Colors.grey[600],
-                      ),
-                    ),
-            ),
-            Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Expanded(
-                        child: Text(
-                          party.title,
-                          style: const TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: Colors.blue[100],
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Text(
-                          partyTypeText,
-                          style: TextStyle(
-                            color: Colors.blue[800],
-                            fontWeight: FontWeight.bold,
+                          child: Icon(
+                            party.type == PartyType.aperitif
+                                ? Icons.local_bar
+                                : party.type == PartyType.dinner
+                                    ? Icons.restaurant
+                                    : Icons.celebration,
+                            size: 50,
+                            color: Colors.grey[600],
                           ),
                         ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    party.description,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(color: Colors.grey[700]),
-                  ),
-                  const SizedBox(height: 8),
-                  Row(
+                ),
+                Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Icon(Icons.calendar_today, size: 16, color: Colors.grey[600]),
-                      const SizedBox(width: 4),
-                      Text(
-                        formattedDate,
-                        style: TextStyle(color: Colors.grey[600]),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 4),
-                  Row(
-                    children: [
-                      Icon(Icons.people, size: 16, color: Colors.grey[600]),
-                      const SizedBox(width: 4),
-                      Text(
-                        '${party.participants.length} participant(s)',
-                        style: TextStyle(color: Colors.grey[600]),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.end,
-                    children: [
-                      isParticipating
-                          ? Chip(
-                              backgroundColor: Colors.green[100],
-                              label: Text(
-                                'Vous participez',
-                                style: TextStyle(color: Colors.green[800]),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Expanded(
+                            child: Text(
+                              party.title,
+                              style: const TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
                               ),
-                              avatar: Icon(Icons.check_circle, color: Colors.green[800], size: 18),
-                            )
-                          : OutlinedButton.icon(
-                              onPressed: () async {
-                                await _databaseService.addParticipantToParty(
-                                  party.id!,
-                                  PartyParticipant(
-                                    userId: widget.currentUser.id!,
-                                    username: widget.currentUser.username,
-                                  ),
-                                );
-                                _loadParties();
-                              },
-                              icon: const Icon(Icons.add),
-                              label: const Text('Participer'),
-                              style: OutlinedButton.styleFrom(
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(18),
-                                ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: Colors.blue[100],
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Text(
+                              partyTypeText,
+                              style: TextStyle(
+                                color: Colors.blue[800],
+                                fontWeight: FontWeight.bold,
                               ),
                             ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        party.description,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(color: Colors.grey[700]),
+                      ),
+                      const SizedBox(height: 8),
+                      Row(
+                        children: [
+                          Icon(Icons.calendar_today, size: 16, color: Colors.grey[600]),
+                          const SizedBox(width: 4),
+                          Text(
+                            formattedDate,
+                            style: TextStyle(color: Colors.grey[600]),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 4),
+                      Row(
+                        children: [
+                          Icon(Icons.people, size: 16, color: Colors.grey[600]),
+                          const SizedBox(width: 4),
+                          Text(
+                            '${party.participants.length} participant(s)',
+                            style: TextStyle(color: Colors.grey[600]),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.end,
+                        children: [
+                          isParticipating
+                              ? Chip(
+                                  backgroundColor: Colors.green[100],
+                                  label: Text(
+                                    'Vous participez',
+                                    style: TextStyle(color: Colors.green[800]),
+                                  ),
+                                  avatar: Icon(Icons.check_circle, color: Colors.green[800], size: 18),
+                                )
+                              : OutlinedButton.icon(
+                                  onPressed: () async {
+                                    await _databaseService.addParticipantToParty(
+                                      party.id!,
+                                      PartyParticipant(
+                                        userId: widget.currentUser.id!,
+                                        username: widget.currentUser.username,
+                                      ),
+                                    );
+                                    _loadParties();
+                                  },
+                                  icon: const Icon(Icons.add),
+                                  label: const Text('Participer'),
+                                  style: OutlinedButton.styleFrom(
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(18),
+                                    ),
+                                  ),
+                                ),
+                        ],
+                      ),
                     ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          // Sticker de statut d'approbation
+          Positioned(
+            top: 10,
+            right: 10,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              decoration: BoxDecoration(
+                color: statusBackgroundColor,
+                borderRadius: BorderRadius.circular(12),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.2),
+                    blurRadius: 4,
+                    offset: const Offset(0, 2),
                   ),
                 ],
               ),
+              child: Text(
+                statusText,
+                style: TextStyle(
+                  color: statusTextColor,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 12,
+                ),
+              ),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }

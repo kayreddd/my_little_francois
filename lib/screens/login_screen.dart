@@ -3,6 +3,7 @@ import 'package:form_field_validator/form_field_validator.dart';
 import '../database/database_service.dart';
 import 'register_screen.dart';
 import 'home_screen.dart';
+import 'reset_password_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -15,15 +16,12 @@ class _LoginScreenState extends State<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
   final _usernameController = TextEditingController();
   final _passwordController = TextEditingController();
-  final _emailController = TextEditingController();
-  bool _isResettingPassword = false;
   String? _errorMessage;
 
   @override
   void dispose() {
     _usernameController.dispose();
     _passwordController.dispose();
-    _emailController.dispose();
     super.dispose();
   }
 
@@ -52,29 +50,20 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 
-  Future<void> _resetPassword() async {
-    if (_formKey.currentState!.validate()) {
-      final user = await DatabaseService.instance.getUserByEmail(_emailController.text);
-      
-      if (user != null && user.username == _usernameController.text) {
-        // TODO: Implement password reset logic
-        setState(() {
-          _errorMessage = 'Un email de réinitialisation a été envoyé';
-          _isResettingPassword = false;
-        });
-      } else {
-        setState(() {
-          _errorMessage = 'Utilisateur non trouvé';
-        });
-      }
-    }
+  void _goToResetPassword() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => ResetPasswordScreen(),
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(_isResettingPassword ? 'Réinitialiser le mot de passe' : 'Connexion'),
+        title: const Text('Connexion'),
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
       ),
       body: Padding(
@@ -93,30 +82,15 @@ class _LoginScreenState extends State<LoginScreen> {
                 validator: RequiredValidator(errorText: 'Veuillez entrer votre nom d\'utilisateur'),
               ),
               const SizedBox(height: 16),
-              if (!_isResettingPassword) ...[
-                TextFormField(
-                  controller: _passwordController,
-                  decoration: const InputDecoration(
-                    labelText: 'Mot de passe',
-                    border: OutlineInputBorder(),
-                  ),
-                  obscureText: true,
-                  validator: RequiredValidator(errorText: 'Veuillez entrer votre mot de passe'),
+              TextFormField(
+                controller: _passwordController,
+                decoration: const InputDecoration(
+                  labelText: 'Mot de passe',
+                  border: OutlineInputBorder(),
                 ),
-              ] else ...[
-                TextFormField(
-                  controller: _emailController,
-                  decoration: const InputDecoration(
-                    labelText: 'Email',
-                    border: OutlineInputBorder(),
-                  ),
-                  keyboardType: TextInputType.emailAddress,
-                  validator: MultiValidator([
-                    RequiredValidator(errorText: 'Veuillez entrer votre email'),
-                    EmailValidator(errorText: 'Veuillez entrer un email valide'),
-                  ]),
-                ),
-              ],
+                obscureText: true,
+                validator: RequiredValidator(errorText: 'Veuillez entrer votre mot de passe'),
+              ),
               if (_errorMessage != null) ...[
                 const SizedBox(height: 8),
                 Text(
@@ -126,34 +100,26 @@ class _LoginScreenState extends State<LoginScreen> {
               ],
               const SizedBox(height: 24),
               ElevatedButton(
-                onPressed: _isResettingPassword ? _resetPassword : _login,
-                child: Text(_isResettingPassword ? 'Réinitialiser' : 'Se connecter'),
+                onPressed: _login,
+                child: const Text('Se connecter'),
               ),
               const SizedBox(height: 16),
               TextButton(
-                onPressed: () {
-                  setState(() {
-                    _isResettingPassword = !_isResettingPassword;
-                    _errorMessage = null;
-                  });
-                },
-                child: Text(_isResettingPassword
-                    ? 'Retour à la connexion'
-                    : 'Mot de passe oublié ?'),
+                onPressed: _goToResetPassword,
+                child: const Text('Mot de passe oublié ?'),
               ),
               const SizedBox(height: 8),
-              if (!_isResettingPassword)
-                TextButton(
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => const RegisterScreen(),
-                      ),
-                    );
-                  },
-                  child: const Text('Créer un compte'),
-                ),
+              TextButton(
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const RegisterScreen(),
+                    ),
+                  );
+                },
+                child: const Text('Créer un compte'),
+              ),
             ],
           ),
         ),

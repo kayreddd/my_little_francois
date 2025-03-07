@@ -20,31 +20,29 @@ void main() async {
   if (html.window.navigator.userAgent.contains('Chrome')) {
     html.window.localStorage['hive_initialized'] = 'true';
     print('Configuration de persistance pour Chrome activée');
+    
+    // Forcer le stockage persistant pour le web (demande explicite au navigateur)
+    try {
+      await html.window.navigator.storage?.persist();
+      print('Stockage persistant demandé explicitement au navigateur');
+    } catch (e) {
+      print('Erreur lors de la demande de stockage persistant: $e');
+    }
   }
   
   // Enregistrer les adaptateurs et ouvrir les boîtes
   await initializeDatabaseFactory();
   
-  // Afficher des informations de débogage pour vérifier l'initialisation
-  final usersBox = await Hive.openBox<User>('users', 
-    crashRecovery: true,
-    compactionStrategy: (entries, deletedEntries) {
-      return deletedEntries > 50 || deletedEntries > 0.3 * entries;
-    },
-  );
-  final horsesBox = await Hive.openBox<Horse>('horses', crashRecovery: true);
-  final eventsBox = await Hive.openBox<Event>('events', crashRecovery: true);
-  final ridingLessonsBox = await Hive.openBox<RidingLesson>('riding_lessons', crashRecovery: true);
-  final competitionsBox = await Hive.openBox<Competition>('competitions', crashRecovery: true);
-  final partiesBox = await Hive.openBox<Party>('parties', crashRecovery: true);
+  // Nous n'ouvrons plus les boîtes ici car elles sont déjà ouvertes dans initializeDatabaseFactory()
+  // Cela évite les problèmes de double ouverture et de synchronisation
   
-  // Forcer la synchronisation des données
-  await usersBox.flush();
-  await horsesBox.flush();
-  await eventsBox.flush();
-  await ridingLessonsBox.flush();
-  await competitionsBox.flush();
-  await partiesBox.flush();
+  // Afficher des informations de débogage pour vérifier l'initialisation
+  final usersBox = Hive.box<User>('users');
+  final horsesBox = Hive.box<Horse>('horses');
+  final eventsBox = Hive.box<Event>('events');
+  final ridingLessonsBox = Hive.box<RidingLesson>('riding_lessons');
+  final competitionsBox = Hive.box<Competition>('competitions');
+  final partiesBox = Hive.box<Party>('parties');
   
   print('Application démarrée avec:');
   print('- ${usersBox.length} utilisateurs');
@@ -63,13 +61,10 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'My Little François',
+      title: 'Horses Time',
       theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: Colors.blue,
-          brightness: Brightness.light,
-        ),
-        useMaterial3: true,
+        primarySwatch: Colors.brown,
+        visualDensity: VisualDensity.adaptivePlatformDensity,
       ),
       home: const LoginScreen(),
     );

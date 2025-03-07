@@ -7,9 +7,11 @@ import 'profile_screen.dart';
 import 'horse_management_screen.dart';
 import 'news_feed_screen.dart';
 import 'riding_lesson_screen.dart';
+import 'riding_lesson_list_screen.dart';
 import 'competition_list_screen.dart';
 import 'party_list_screen.dart';
 import 'stable_manager_approval_screen.dart';
+import 'login_screen.dart'; // Importer l'écran de connexion
 
 class HomeScreen extends StatefulWidget {
   final User user;
@@ -57,7 +59,7 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('My Little François'),
+        title: const Text('Horses Time'),
         actions: [
           IconButton(
             icon: const Icon(Icons.person),
@@ -79,7 +81,12 @@ class _HomeScreenState extends State<HomeScreen> {
           IconButton(
             icon: const Icon(Icons.logout),
             onPressed: () {
-              Navigator.of(context).pop(); // Retour à l'écran de connexion
+              // Effacer les données de session si nécessaire
+              // puis naviguer vers l'écran de connexion en remplaçant toute la pile de navigation
+              Navigator.of(context).pushAndRemoveUntil(
+                MaterialPageRoute(builder: (context) => const LoginScreen()),
+                (route) => false, // Cela supprime toutes les routes précédentes
+              );
             },
           ),
         ],
@@ -157,7 +164,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (context) => RidingLessonScreen(user: _currentUser),
+                          builder: (context) => RidingLessonListScreen(user: _currentUser),
                         ),
                       ).then((_) => _loadRecentEvents());
                     },

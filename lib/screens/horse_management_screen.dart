@@ -32,25 +32,37 @@ class _HorseManagementScreenState extends State<HorseManagementScreen> {
     });
 
     try {
-      // Charger tous les chevaux
-      _allHorses = await DatabaseService.instance.getAllHorses();
+      // Recharger l'utilisateur actuel pour obtenir les listes de chevaux à jour
+      final updatedUser = await DatabaseService.instance.getUserById(widget.user.id!);
+      if (updatedUser != null) {
+        // Mettre à jour la référence à l'utilisateur dans le widget parent
+        // Cela n'est pas possible directement, mais nous pouvons utiliser les données mises à jour
+        
+        // Charger tous les chevaux
+        _allHorses = await DatabaseService.instance.getAllHorses();
 
-      // Filtrer les chevaux possédés par l'utilisateur
-      if (widget.user.ownedHorseIds != null && widget.user.ownedHorseIds!.isNotEmpty) {
-        _ownedHorses = _allHorses
-            .where((horse) => widget.user.ownedHorseIds!.contains(horse.id))
-            .toList();
-      } else {
-        _ownedHorses = [];
-      }
+        // Filtrer les chevaux possédés par l'utilisateur avec les données mises à jour
+        if (updatedUser.ownedHorseIds != null && updatedUser.ownedHorseIds!.isNotEmpty) {
+          _ownedHorses = _allHorses
+              .where((horse) => updatedUser.ownedHorseIds!.contains(horse.id))
+              .toList();
+        } else {
+          _ownedHorses = [];
+        }
 
-      // Filtrer les chevaux associés à l'utilisateur (pour les DP)
-      if (widget.user.associatedHorseIds != null && widget.user.associatedHorseIds!.isNotEmpty) {
-        _associatedHorses = _allHorses
-            .where((horse) => widget.user.associatedHorseIds!.contains(horse.id))
-            .toList();
-      } else {
-        _associatedHorses = [];
+        // Filtrer les chevaux associés à l'utilisateur (pour les DP) avec les données mises à jour
+        if (updatedUser.associatedHorseIds != null && updatedUser.associatedHorseIds!.isNotEmpty) {
+          _associatedHorses = _allHorses
+              .where((horse) => updatedUser.associatedHorseIds!.contains(horse.id))
+              .toList();
+        } else {
+          _associatedHorses = [];
+        }
+        
+        // Afficher des informations de débogage
+        print('Utilisateur rechargé: ${updatedUser.username}');
+        print('Chevaux possédés: ${updatedUser.ownedHorseIds}');
+        print('Chevaux associés: ${updatedUser.associatedHorseIds}');
       }
     } catch (e) {
       if (mounted) {
@@ -79,7 +91,23 @@ class _HorseManagementScreenState extends State<HorseManagementScreen> {
     );
 
     if (result != null) {
-      _loadHorses();
+      // Mettre à jour la liste des chevaux immédiatement
+      setState(() {
+        // Ajouter le nouveau cheval à la liste des chevaux possédés
+        _ownedHorses.add(result);
+        // Ajouter également à la liste complète
+        _allHorses.add(result);
+      });
+      
+      // Afficher un message de confirmation
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Cheval ajouté avec succès')),
+        );
+      }
+      
+      // Recharger les données pour s'assurer que tout est à jour
+      await _loadHorses();
     }
   }
 
@@ -96,7 +124,33 @@ class _HorseManagementScreenState extends State<HorseManagementScreen> {
     );
 
     if (result != null) {
-      _loadHorses();
+      // Mettre à jour la liste des chevaux immédiatement
+      setState(() {
+        // Mettre à jour le cheval dans la liste des chevaux possédés
+        final ownedIndex = _ownedHorses.indexWhere((h) => h.id == result.id);
+        if (ownedIndex >= 0) {
+          _ownedHorses[ownedIndex] = result;
+        }
+        
+        // Mettre à jour le cheval dans la liste des chevaux associés
+        final associatedIndex = _associatedHorses.indexWhere((h) => h.id == result.id);
+        if (associatedIndex >= 0) {
+          _associatedHorses[associatedIndex] = result;
+        }
+        
+        // Mettre à jour le cheval dans la liste complète
+        final allIndex = _allHorses.indexWhere((h) => h.id == result.id);
+        if (allIndex >= 0) {
+          _allHorses[allIndex] = result;
+        }
+      });
+      
+      // Afficher un message de confirmation
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Cheval modifié avec succès')),
+        );
+      }
     }
   }
 
